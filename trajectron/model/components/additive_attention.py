@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import pdb
 
 class AdditiveAttention(nn.Module):
     # Implementing the attention module of Bahdanau et al. 2015 where
@@ -28,7 +28,6 @@ class AdditiveAttention(nn.Module):
         score_vec = torch.cat([self.score(encoder_states[:, i], decoder_state) for i in range(encoder_states.shape[1])],
                               dim=1)
         # score_vec is of shape (batch, num_enc_states)
-
         attention_probs = torch.unsqueeze(F.softmax(score_vec, dim=1), dim=2)
         # attention_probs is of shape (batch, num_enc_states, 1)
 

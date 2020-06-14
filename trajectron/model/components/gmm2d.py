@@ -2,7 +2,7 @@ import torch
 import torch.distributions as td
 import numpy as np
 from model.model_utils import to_one_hot
-
+import pdb
 
 class GMM2D(td.Distribution):
     r"""
@@ -35,7 +35,6 @@ class GMM2D(td.Distribution):
         self.components = log_pis.shape[-1]
         self.dimensions = 2
         self.device = log_pis.device
-
         log_pis = torch.clamp(log_pis, min=-1e5)
         self.log_pis = log_pis - torch.logsumexp(log_pis, dim=-1, keepdim=True)  # [..., N]
         self.mus = self.reshape_to_components(mus)         # [..., N, 2]
@@ -72,6 +71,7 @@ class GMM2D(td.Distribution):
         :param sample_shape: Shape of the samples
         :return: Samples from the GMM.
         """
+        # pdb.set_trace()
         mvn_samples = (self.mus +
                        torch.squeeze(
                            torch.matmul(self.L,

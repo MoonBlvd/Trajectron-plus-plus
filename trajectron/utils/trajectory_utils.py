@@ -1,5 +1,5 @@
 import numpy as np
-
+import pdb
 
 def prediction_output_to_trajectories(prediction_output_dict,
                                       dt,
@@ -44,5 +44,4 @@ def prediction_output_to_trajectories(prediction_output_dict,
                 histories_dict[t][node] = map.to_map_points(history)
                 output_dict[t][node] = map.to_map_points(trajectory)
                 futures_dict[t][node] = map.to_map_points(future)
-
     return output_dict, histories_dict, futures_dict

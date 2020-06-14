@@ -19,6 +19,7 @@ from model.model_utils import cyclical_lr
 from model.dataset import EnvironmentDataset, collate
 from tensorboardX import SummaryWriter
 # torch.autograd.set_detect_anomaly(True)
+import pdb
 
 if not torch.cuda.is_available() or args.device == 'cpu':
     args.device = torch.device('cpu')
@@ -132,6 +133,7 @@ def main():
                                        return_robot=not args.incl_robot_node)
     train_data_loader = dict()
     for node_type_data_set in train_dataset:
+        node_type_data_set.__getitem__(1)
         node_type_dataloader = utils.data.DataLoader(node_type_data_set,
                                                      collate_fn=collate,
                                                      pin_memory=False if args.device is 'cpu' else True,
@@ -181,7 +183,7 @@ def main():
             eval_data_loader[node_type_data_set.node_type] = node_type_dataloader
 
         print(f"Loaded evaluation data from {eval_data_path}")
-
+    
     # Offline Calculate Scene Graph
     if hyperparams['offline_scene_graph'] == 'yes':
         print(f"Offline calculating scene graphs")
@@ -235,14 +237,22 @@ def main():
     #################################
     #           TRAINING            #
     #################################
+
     curr_iter_node_type = {node_type: 0 for node_type in train_data_loader.keys()}
     for epoch in range(1, args.train_epochs + 1):
         model_registrar.to(args.device)
         train_dataset.augment = args.augment
         for node_type, data_loader in train_data_loader.items():
+            # pdb.set_trace()
+            
+            
+            # batch = data_loader.dataset.__getitem__(1)
+
+
             curr_iter = curr_iter_node_type[node_type]
             pbar = tqdm(data_loader, ncols=80)
             for batch in pbar:
+            
                 trajectron.set_curr_iter(curr_iter)
                 trajectron.step_annealers(node_type)
                 optimizer[node_type].zero_grad()
@@ -383,7 +393,6 @@ def main():
                                                           num_samples=50,
                                                           min_future_timesteps=ph,
                                                           full_dist=False)
-
                     eval_batch_errors.append(evaluation.compute_batch_statistics(predictions,
                                                                                  scene.dt,
                                                                                  max_hl=max_hl,
@@ -400,6 +409,8 @@ def main():
 
                 # Predict maximum likelihood batch timesteps for evaluation dataset evaluation
                 eval_batch_errors_ml = []
+                eval_ade_batch_errors = np.array([])
+                eval_fde_batch_errors = np.array([])
                 for scene in tqdm(eval_scenes, desc='MM Evaluation', ncols=80):
                     timesteps = scene.sample_timesteps(scene.timesteps)
 
@@ -419,7 +430,11 @@ def main():
                                                                                     map=scene.map,
                                                                                     node_type_enum=eval_env.NodeType,
                                                                                     kde=False))
-
+                for batch_error_dict in eval_batch_errors_ml:
+                    eval_ade_batch_errors = np.hstack((eval_ade_batch_errors, batch_error_dict[eval_env.NodeType[0]]['ade']))
+                    eval_fde_batch_errors = np.hstack((eval_fde_batch_errors, batch_error_dict[eval_env.NodeType[0]]['fde']))
+                print('ADE:', eval_ade_batch_errors.mean())
+                print('FDE:', eval_fde_batch_errors.mean())
                 evaluation.log_batch_errors(eval_batch_errors_ml,
                                             log_writer,
                                             'eval/ml',

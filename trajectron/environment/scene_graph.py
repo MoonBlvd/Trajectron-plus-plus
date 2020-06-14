@@ -4,7 +4,7 @@ import scipy.signal as ss
 from collections import defaultdict
 import warnings
 from .node import Node
-
+import pdb
 
 class Edge(object):
     def __init__(self, curr_node, other_node):
@@ -139,7 +139,6 @@ class TemporalSceneGraph(object):
 
         node_type_mat = np.zeros((N, N), dtype=np.int8)
         node_attention_mat = np.zeros((N, N), dtype=np.float)
-
         for node_idx, node in enumerate(nodes):
             if online:
                 # RingBuffers do not have a fixed constant size. Instead, they grow up to their capacity. Thus,
@@ -154,7 +153,6 @@ class TemporalSceneGraph(object):
                 node_attention_mat[node_idx_from, node_idx] = attention_radius[(node_from.type, node.type)]
 
         np.fill_diagonal(node_type_mat, 0)
-
         for timestep in range(position_cube.shape[0]):
             dists = squareform(pdist(position_cube[timestep], metric='euclidean'))
 

@@ -2,7 +2,7 @@ import copy
 import numpy as np
 from .scene_graph import TemporalSceneGraph, SceneGraph
 from .node import MultiNode
-
+import pdb
 
 class Scene(object):
     def __init__(self, timesteps, map=None, dt=1, name="", frequency_multiplier=1, aug_func=None,  non_aug_scene=None):
@@ -58,6 +58,7 @@ class Scene(object):
         :param edge_removal_filter:  Filter for removing edges (Only online)
         :return: Scene Graph for given timestep.
         """
+        # pdb.set_trace()
         if self.temporal_scene_graph is None:
             timestep_range = np.array([timestep - len(edge_removal_filter), timestep])
             node_pos_dict = dict()
@@ -131,7 +132,6 @@ class Scene(object):
         :param return_robot: Return a node if it is the robot.
         :return: Dictionary with timesteps as keys and list of nodes as value.
         """
-
         present_nodes = {}
 
         for node in self.nodes:

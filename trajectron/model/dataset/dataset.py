@@ -1,7 +1,7 @@
 from torch.utils import data
 import numpy as np
 from .preprocessing import get_node_timestep_data
-
+import pdb
 
 class EnvironmentDataset(object):
     def __init__(self, env, state, pred_state, node_freq_mult, scene_freq_mult, hyperparams, **kwargs):
@@ -71,6 +71,6 @@ class NodeTypeDataset(data.Dataset):
         if self.augment:
             scene = scene.augment()
             node = scene.get_node_by_id(node.id)
-
+        
         return get_node_timestep_data(self.env, scene, t, node, self.state, self.pred_state,
                                       self.edge_types, self.max_ht, self.max_ft, self.hyperparams)

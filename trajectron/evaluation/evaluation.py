@@ -5,13 +5,17 @@ from scipy.stats import gaussian_kde
 from utils import prediction_output_to_trajectories
 import visualization
 from matplotlib import pyplot as plt
-
+import pdb
 
 def compute_ade(predicted_trajs, gt_traj):
     error = np.linalg.norm(predicted_trajs - gt_traj, axis=-1)
     ade = np.mean(error, axis=-1)
     return ade.flatten()
 
+def compute_ade_per_step(predicted_trajs, gt_traj):
+    error = np.linalg.norm(predicted_trajs - gt_traj, axis=-1)
+    ade = error.min(axis=-2)
+    return ade
 
 def compute_fde(predicted_trajs, gt_traj):
     final_error = np.linalg.norm(predicted_trajs[:, :, -1] - gt_traj[-1], axis=-1)
@@ -23,17 +27,18 @@ def compute_kde_nll(predicted_trajs, gt_traj):
     log_pdf_lower_bound = -20
     num_timesteps = gt_traj.shape[0]
     num_batches = predicted_trajs.shape[0]
-
+    per_step_nll = np.zeros(num_timesteps)
     for batch_num in range(num_batches):
         for timestep in range(num_timesteps):
             try:
                 kde = gaussian_kde(predicted_trajs[batch_num, :, timestep].T)
                 pdf = np.clip(kde.logpdf(gt_traj[timestep].T), a_min=log_pdf_lower_bound, a_max=None)[0]
                 kde_ll += pdf / (num_timesteps * num_batches)
+                per_step_nll[timestep] += pdf / num_batches
             except np.linalg.LinAlgError:
                 kde_ll = np.nan
-
-    return -kde_ll
+                per_step_nll[timestep] = np.nan
+    return -kde_ll, -per_step_nll
 
 
 def compute_obs_violations(predicted_trajs, map):
@@ -75,14 +80,15 @@ def compute_batch_statistics(prediction_output_dict,
 
     batch_error_dict = dict()
     for node_type in node_type_enum:
-        batch_error_dict[node_type] =  {'ade': list(), 'fde': list(), 'kde': list(), 'obs_viols': list()}
+        batch_error_dict[node_type] =  {'ade': list(), 'ade_per_step': list(), 'fde': list(), 'kde': list(), 'kde_per_step': list(), 'obs_viols': list()}
 
     for t in prediction_dict.keys():
         for node in prediction_dict[t].keys():
             ade_errors = compute_ade(prediction_dict[t][node], futures_dict[t][node])
+            ade_errors_per_step = compute_ade_per_step(prediction_dict[t][node], futures_dict[t][node])
             fde_errors = compute_fde(prediction_dict[t][node], futures_dict[t][node])
             if kde:
-                kde_ll = compute_kde_nll(prediction_dict[t][node], futures_dict[t][node])
+                kde_ll, per_step_kde_ll = compute_kde_nll(prediction_dict[t][node], futures_dict[t][node])
             else:
                 kde_ll = 0
             if obs:
@@ -94,8 +100,10 @@ def compute_batch_statistics(prediction_output_dict,
                 fde_errors = np.min(fde_errors, keepdims=True)
                 kde_ll = np.min(kde_ll)
             batch_error_dict[node.type]['ade'].extend(list(ade_errors))
+            batch_error_dict[node.type]['ade_per_step'].append(ade_errors_per_step)
             batch_error_dict[node.type]['fde'].extend(list(fde_errors))
             batch_error_dict[node.type]['kde'].extend([kde_ll])
+            batch_error_dict[node.type]['kde_per_step'].append(per_step_kde_ll[None, :])
             batch_error_dict[node.type]['obs_viols'].extend([obs_viols])
 
     return batch_error_dict

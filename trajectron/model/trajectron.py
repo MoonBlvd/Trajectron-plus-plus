@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from model.mgcvae import MultimodalGenerativeCVAE
 from model.dataset import get_timesteps_data, restore
-
+import pdb
 
 class Trajectron(object):
     def __init__(self, model_registrar,
@@ -70,7 +70,7 @@ class Trajectron(object):
          neighbors_data_st,
          neighbors_edge_value,
          robot_traj_st_t,
-         map) = batch
+         map,_,_) = batch
 
         x = x_t.to(self.device)
         y = y_t.to(self.device)
@@ -102,7 +102,7 @@ class Trajectron(object):
          neighbors_data_st,
          neighbors_edge_value,
          robot_traj_st_t,
-         map) = batch
+         map, _, _) = batch
 
         x = x_t.to(self.device)
         y = y_t.to(self.device)
@@ -160,15 +160,14 @@ class Trajectron(object):
              neighbors_data_st,
              neighbors_edge_value,
              robot_traj_st_t,
-             map), nodes, timesteps_o = batch
-
+             map, _, _), nodes, timesteps_o = batch
             x = x_t.to(self.device)
             x_st_t = x_st_t.to(self.device)
             if robot_traj_st_t is not None:
                 robot_traj_st_t = robot_traj_st_t.to(self.device)
             if type(map) == torch.Tensor:
                 map = map.to(self.device)
-
+            
             # Run forward pass
             predictions = model.predict(inputs=x,
                                         inputs_st=x_st_t,

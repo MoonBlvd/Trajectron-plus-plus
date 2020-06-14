@@ -8,6 +8,7 @@ sys.path.append("../../trajectron")
 from environment import Environment, Scene, Node
 from utils import maybe_makedirs
 from environment import derivative_of
+import pdb
 
 desired_max_time = 100
 pred_indices = [2, 3]
@@ -83,7 +84,7 @@ l = 0
 maybe_makedirs('../processed')
 data_columns = pd.MultiIndex.from_product([['position', 'velocity', 'acceleration'], ['x', 'y']])
 for desired_source in ['eth', 'hotel', 'univ', 'zara1', 'zara2']:
-    for data_class in ['train', 'val', 'test']:
+    for data_class in ['train', 'val', 'test']: 
         env = Environment(node_type_list=['PEDESTRIAN'], standardization=standardization)
         attention_radius = dict()
         attention_radius[(env.NodeType.PEDESTRIAN, env.NodeType.PEDESTRIAN)] = 3.0
@@ -98,7 +99,7 @@ for desired_source in ['eth', 'hotel', 'univ', 'zara1', 'zara2']:
                     input_data_dict = dict()
                     full_data_path = os.path.join(subdir, file)
                     print('At', full_data_path)
-
+                    
                     data = pd.read_csv(full_data_path, sep='\t', index_col=False, header=None)
                     data.columns = ['frame_id', 'track_id', 'pos_x', 'pos_y']
                     data['frame_id'] = pd.to_numeric(data['frame_id'], downcast='integer')
@@ -112,10 +113,14 @@ for desired_source in ['eth', 'hotel', 'univ', 'zara1', 'zara2']:
                     data['node_id'] = data['track_id'].astype(str)
                     data.sort_values('frame_id', inplace=True)
 
-                    # Mean Position
+                    ## Mean Position]
+                    print(file)
+                    print(data['pos_x'].mean())
+                    print(data['pos_y'].mean())
+                    # pdb.set_trace()
                     data['pos_x'] = data['pos_x'] - data['pos_x'].mean()
                     data['pos_y'] = data['pos_y'] - data['pos_y'].mean()
-
+                    
                     max_timesteps = data['frame_id'].max()
 
                     scene = Scene(timesteps=max_timesteps+1, dt=dt, name=desired_source + "_" + data_class, aug_func=augment if data_class == 'train' else None)

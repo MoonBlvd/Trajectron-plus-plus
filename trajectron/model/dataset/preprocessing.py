@@ -3,8 +3,9 @@ import numpy as np
 import collections.abc
 from torch.utils.data._utils.collate import default_collate
 import dill
+import pdb
 container_abcs = collections.abc
-
+import pdb
 
 def restore(data):
     """
@@ -37,6 +38,8 @@ def collate(batch):
                                                                      patch_size=patch_size[0],
                                                                      rotation=heading_angle)
             return map
+        if isinstance(elem, (str, int)):
+            return default_collate(batch)
         transposed = zip(*batch)
         return [collate(samples) for samples in transposed]
     elif isinstance(elem, container_abcs.Mapping):
@@ -91,7 +94,7 @@ def get_node_timestep_data(env, scene, t, node, state, pred_state,
     x = node.get(timestep_range_x, state[node.type])
     y = node.get(timestep_range_y, pred_state[node.type])
     first_history_index = (max_ht - node.history_points_at(t)).clip(0)
-
+    
     _, std = env.get_standardize_params(state[node.type], node.type)
     std[0:2] = env.attention_radius[(node.type, node.type)]
     rel_state = np.zeros_like(x[0])
@@ -116,7 +119,6 @@ def get_node_timestep_data(env, scene, t, node, state, pred_state,
                                             env.attention_radius,
                                             hyperparams['edge_addition_filter'],
                                             hyperparams['edge_removal_filter']) if scene_graph is None else scene_graph
-
         neighbors_data_st = dict()
         neighbors_edge_value = dict()
         for edge_type in edge_types:
@@ -128,7 +130,6 @@ def get_node_timestep_data(env, scene, t, node, state, pred_state,
                 # We get the edge masks for the current node at the current timestep
                 edge_masks = torch.tensor(scene_graph.get_edge_scaling(node), dtype=torch.float)
                 neighbors_edge_value[edge_type] = edge_masks
-
             for connected_node in connected_nodes:
                 neighbor_state_np = connected_node.get(np.array([t - max_ht, t]),
                                                        state[connected_node.type],
@@ -186,9 +187,9 @@ def get_node_timestep_data(env, scene, t, node, state, pred_state,
 
             patch_size = hyperparams['map_encoder'][node.type]['patch_size']
             map_tuple = (scene_map, map_point, heading_angle, patch_size)
-
+    
     return (first_history_index, x_t, y_t, x_st_t, y_st_t, neighbors_data_st,
-            neighbors_edge_value, robot_traj_st_t, map_tuple)
+            neighbors_edge_value, robot_traj_st_t, map_tuple, scene.name, t)
 
 
 def get_timesteps_data(env, scene, t, node_type, state, pred_state,

@@ -12,6 +12,7 @@ from tqdm import tqdm
 from model.model_registrar import ModelRegistrar
 from model.trajectron import Trajectron
 import evaluation
+import pdb
 
 seed = 0
 np.random.seed(seed)
@@ -47,7 +48,6 @@ if __name__ == "__main__":
         env = dill.load(f, encoding='latin1')
 
     eval_stg, hyperparams = load_model(args.model, env, ts=args.checkpoint)
-
     if 'override_attention_radius' in hyperparams:
         for attention_radius_override in hyperparams['override_attention_radius']:
             node_type1, node_type2, attention_radius = attention_radius_override.split(' ')
@@ -66,84 +66,83 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         ############### MOST LIKELY ###############
-        eval_ade_batch_errors = np.array([])
-        eval_fde_batch_errors = np.array([])
-        print("-- Evaluating GMM Grid Sampled (Most Likely)")
-        for i, scene in enumerate(scenes):
-            print(f"---- Evaluating Scene {i + 1}/{len(scenes)}")
-            timesteps = np.arange(scene.timesteps)
+        # eval_ade_batch_errors = np.array([])
+        # eval_fde_batch_errors = np.array([])
+        # print("-- Evaluating GMM Grid Sampled (Most Likely)")
+        # for i, scene in enumerate(scenes):
+        #     print(f"---- Evaluating Scene {i + 1}/{len(scenes)}")
+        #     timesteps = np.arange(scene.timesteps)
+        #     predictions = eval_stg.predict(scene,
+        #                                    timesteps,
+        #                                    ph,
+        #                                    num_samples=1,
+        #                                    min_future_timesteps=12,
+        #                                    z_mode=False,
+        #                                    gmm_mode=True,
+        #                                    full_dist=True)  # This will trigger grid sampling
+        #     batch_error_dict = evaluation.compute_batch_statistics(predictions,
+        #                                                            scene.dt,
+        #                                                            max_hl=max_hl,
+        #                                                            ph=ph,
+        #                                                            node_type_enum=env.NodeType,
+        #                                                            map=None,
+        #                                                            prune_ph_to_future=True,
+        #                                                            kde=False)
 
-            predictions = eval_stg.predict(scene,
-                                           timesteps,
-                                           ph,
-                                           num_samples=1,
-                                           min_future_timesteps=12,
-                                           z_mode=False,
-                                           gmm_mode=True,
-                                           full_dist=True)  # This will trigger grid sampling
+        #     eval_ade_batch_errors = np.hstack((eval_ade_batch_errors, batch_error_dict[args.node_type]['ade']))
+        #     eval_fde_batch_errors = np.hstack((eval_fde_batch_errors, batch_error_dict[args.node_type]['fde']))
 
-            batch_error_dict = evaluation.compute_batch_statistics(predictions,
-                                                                   scene.dt,
-                                                                   max_hl=max_hl,
-                                                                   ph=ph,
-                                                                   node_type_enum=env.NodeType,
-                                                                   map=None,
-                                                                   prune_ph_to_future=True,
-                                                                   kde=False)
+        # print(np.mean(eval_fde_batch_errors))
+        # pd.DataFrame({'value': eval_ade_batch_errors, 'metric': 'ade', 'type': 'ml'}
+        #              ).to_csv(os.path.join(args.output_path, args.output_tag + '_ade_most_likely.csv'))
+        # pd.DataFrame({'value': eval_fde_batch_errors, 'metric': 'fde', 'type': 'ml'}
+        #              ).to_csv(os.path.join(args.output_path, args.output_tag + '_fde_most_likely.csv'))
+        # # pdb.set_trace()
 
-            eval_ade_batch_errors = np.hstack((eval_ade_batch_errors, batch_error_dict[args.node_type]['ade']))
-            eval_fde_batch_errors = np.hstack((eval_fde_batch_errors, batch_error_dict[args.node_type]['fde']))
+        # ############### MODE Z ###############
+        # eval_ade_batch_errors = np.array([])
+        # eval_fde_batch_errors = np.array([])
+        # eval_kde_nll = np.array([])
+        # print("-- Evaluating Mode Z")
+        # for i, scene in enumerate(scenes):
+        #     print(f"---- Evaluating Scene {i+1}/{len(scenes)}")
+        #     for t in tqdm(range(0, scene.timesteps, 10)):
+        #         timesteps = np.arange(t, t + 10)
+                
+        #         predictions = eval_stg.predict(scene,
+        #                                        timesteps,
+        #                                        ph,
+        #                                        num_samples=2000,
+        #                                        min_future_timesteps=12,
+        #                                        z_mode=True,
+        #                                        full_dist=False)
 
-        print(np.mean(eval_fde_batch_errors))
-        pd.DataFrame({'value': eval_ade_batch_errors, 'metric': 'ade', 'type': 'ml'}
-                     ).to_csv(os.path.join(args.output_path, args.output_tag + '_ade_most_likely.csv'))
-        pd.DataFrame({'value': eval_fde_batch_errors, 'metric': 'fde', 'type': 'ml'}
-                     ).to_csv(os.path.join(args.output_path, args.output_tag + '_fde_most_likely.csv'))
+        #         if not predictions:
+        #             continue
+        #         batch_error_dict = evaluation.compute_batch_statistics(predictions,
+        #                                                                scene.dt,
+        #                                                                max_hl=max_hl,
+        #                                                                ph=ph,
+        #                                                                node_type_enum=env.NodeType,
+        #                                                                map=None,
+        #                                                                prune_ph_to_future=True)
+        #         eval_ade_batch_errors = np.hstack((eval_ade_batch_errors, batch_error_dict[args.node_type]['ade']))
+        #         eval_fde_batch_errors = np.hstack((eval_fde_batch_errors, batch_error_dict[args.node_type]['fde']))
+        #         eval_kde_nll = np.hstack((eval_kde_nll, batch_error_dict[args.node_type]['kde']))
 
-
-        ############### MODE Z ###############
-        eval_ade_batch_errors = np.array([])
-        eval_fde_batch_errors = np.array([])
-        eval_kde_nll = np.array([])
-        print("-- Evaluating Mode Z")
-        for i, scene in enumerate(scenes):
-            print(f"---- Evaluating Scene {i+1}/{len(scenes)}")
-            for t in tqdm(range(0, scene.timesteps, 10)):
-                timesteps = np.arange(t, t + 10)
-                predictions = eval_stg.predict(scene,
-                                               timesteps,
-                                               ph,
-                                               num_samples=2000,
-                                               min_future_timesteps=12,
-                                               z_mode=True,
-                                               full_dist=False)
-
-                if not predictions:
-                    continue
-
-                batch_error_dict = evaluation.compute_batch_statistics(predictions,
-                                                                       scene.dt,
-                                                                       max_hl=max_hl,
-                                                                       ph=ph,
-                                                                       node_type_enum=env.NodeType,
-                                                                       map=None,
-                                                                       prune_ph_to_future=True)
-                eval_ade_batch_errors = np.hstack((eval_ade_batch_errors, batch_error_dict[args.node_type]['ade']))
-                eval_fde_batch_errors = np.hstack((eval_fde_batch_errors, batch_error_dict[args.node_type]['fde']))
-                eval_kde_nll = np.hstack((eval_kde_nll, batch_error_dict[args.node_type]['kde']))
-
-        pd.DataFrame({'value': eval_ade_batch_errors, 'metric': 'ade', 'type': 'z_mode'}
-                     ).to_csv(os.path.join(args.output_path, args.output_tag + '_ade_z_mode.csv'))
-        pd.DataFrame({'value': eval_fde_batch_errors, 'metric': 'fde', 'type': 'z_mode'}
-                     ).to_csv(os.path.join(args.output_path, args.output_tag + '_fde_z_mode.csv'))
-        pd.DataFrame({'value': eval_kde_nll, 'metric': 'kde', 'type': 'z_mode'}
-                     ).to_csv(os.path.join(args.output_path, args.output_tag + '_kde_z_mode.csv'))
-
+        # pd.DataFrame({'value': eval_ade_batch_errors, 'metric': 'ade', 'type': 'z_mode'}
+        #              ).to_csv(os.path.join(args.output_path, args.output_tag + '_ade_z_mode.csv'))
+        # pd.DataFrame({'value': eval_fde_batch_errors, 'metric': 'fde', 'type': 'z_mode'}
+        #              ).to_csv(os.path.join(args.output_path, args.output_tag + '_fde_z_mode.csv'))
+        # pd.DataFrame({'value': eval_kde_nll, 'metric': 'kde', 'type': 'z_mode'}
+        #              ).to_csv(os.path.join(args.output_path, args.output_tag + '_kde_z_mode.csv'))
 
         ############### BEST OF 20 ###############
         eval_ade_batch_errors = np.array([])
+        eval_ade_per_step_batch_errors = []
         eval_fde_batch_errors = np.array([])
         eval_kde_nll = np.array([])
+        eval_kde_nll_per_step = []
         print("-- Evaluating best of 20")
         for i, scene in enumerate(scenes):
             print(f"---- Evaluating Scene {i + 1}/{len(scenes)}")
@@ -154,6 +153,7 @@ if __name__ == "__main__":
                                                ph,
                                                num_samples=20,
                                                min_future_timesteps=12,
+                                               min_history_timesteps=hyperparams['minimum_history_length'],
                                                z_mode=False,
                                                gmm_mode=False,
                                                full_dist=False)
@@ -170,9 +170,13 @@ if __name__ == "__main__":
                                                                        best_of=True,
                                                                        prune_ph_to_future=True)
                 eval_ade_batch_errors = np.hstack((eval_ade_batch_errors, batch_error_dict[args.node_type]['ade']))
+                # pdb.set_trace()
+                eval_ade_per_step_batch_errors.extend(batch_error_dict[args.node_type]['ade_per_step'])
                 eval_fde_batch_errors = np.hstack((eval_fde_batch_errors, batch_error_dict[args.node_type]['fde']))
                 eval_kde_nll = np.hstack((eval_kde_nll, batch_error_dict[args.node_type]['kde']))
-
+                eval_kde_nll_per_step.extend(batch_error_dict[args.node_type]['kde_per_step'])
+        eval_ade_per_step_batch_errors = np.concatenate(eval_ade_per_step_batch_errors, axis=0)
+        eval_kde_nll_per_step = np.concatenate(eval_kde_nll_per_step, axis=0)
         pd.DataFrame({'value': eval_ade_batch_errors, 'metric': 'ade', 'type': 'best_of'}
                      ).to_csv(os.path.join(args.output_path, args.output_tag + '_ade_best_of.csv'))
         pd.DataFrame({'value': eval_fde_batch_errors, 'metric': 'fde', 'type': 'best_of'}
@@ -180,7 +184,7 @@ if __name__ == "__main__":
         pd.DataFrame({'value': eval_kde_nll, 'metric': 'kde', 'type': 'best_of'}
                      ).to_csv(os.path.join(args.output_path, args.output_tag + '_kde_best_of.csv'))
 
-
+        pdb.set_trace()
         ############### FULL ###############
         eval_ade_batch_errors = np.array([])
         eval_fde_batch_errors = np.array([])

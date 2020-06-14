@@ -50,7 +50,6 @@ class SingleIntegrator(Dynamic):
         pos_dist_sigma_matrix_list = []
 
         pos_mus = p_0[:, None] + torch.cumsum(v_dist.mus, dim=2) * self.dt
-
         vel_dist_sigma_matrix = v_dist.get_covariance_matrix()
         pos_dist_sigma_matrix_t = torch.zeros(sample_batch_dim + [v_dist.components, 2, 2], device=self.device)
 

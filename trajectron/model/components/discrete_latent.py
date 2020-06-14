@@ -2,7 +2,7 @@ import torch
 import torch.distributions as td
 import numpy as np
 from model.model_utils import ModeKeys
-
+import pdb
 
 class DiscreteLatent(object):
     def __init__(self, hyperparams, device):
@@ -39,14 +39,15 @@ class DiscreteLatent(object):
         if full_dist:
             bs = self.p_dist.probs.size()[0]
             z_NK = torch.from_numpy(self.all_one_hot_combinations(self.N, self.K)).float().to(self.device).repeat(num_samples, bs)
-            num_components = self.K ** self.N
-            k = num_samples * num_components
+            num_components = self.K ** self.N # 25**1
+            k = num_samples * num_components # 
         elif all_z_sep:
             bs = self.p_dist.probs.size()[0]
             z_NK = torch.from_numpy(self.all_one_hot_combinations(self.N, self.K)).float().to(self.device).repeat(1, bs)
             k = self.K ** self.N
             num_samples = k
         elif most_likely_z:
+            # pdb.set_trace()
             # Sampling the most likely z from p(z|x).
             eye_mat = torch.eye(self.p_dist.event_shape[-1], device=self.device)
             argmax_idxs = torch.argmax(self.p_dist.probs, dim=2)
